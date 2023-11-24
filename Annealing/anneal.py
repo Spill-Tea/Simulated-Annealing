@@ -27,6 +27,7 @@ from abc import ABC
 from abc import abstractmethod
 from dataclasses import dataclass
 from logging import Logger
+from math import exp
 from typing import List, Optional
 
 import numpy as np
@@ -66,6 +67,11 @@ def n_opt(array: np.ndarray, n: int = 2):
     """Stochastically Swaps inplace any N indices within an array"""
     index = np.random.choice(len(array), n, replace=False)
     array[index] = array[np.roll(index, 1)]
+
+
+def probability(difference: float, temperature: float) -> float:
+    """Calculates the Probability scaled by the difference and current temperature"""
+    return exp(-difference / temperature)
 
 
 class AnnealingBase(ABC):
@@ -166,9 +172,10 @@ class AnnealingBase(ABC):
             array = self.subsample(index)
             current = self.fitness(array)
             self.tm = self.chill(j)
-            test = current <= best
+            delta = current - best
+            test = delta <= 0
 
-            if test or (self.tm > np.random.random(1) * self.chill.tm_max):
+            if test or probability(delta, self.tm) > np.random.random(1):
                 self.log.debug("Iteration %d: Performance (%.4f)", j, current)
                 best = current
                 best_index = np.copy(index)
