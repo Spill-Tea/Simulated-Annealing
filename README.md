@@ -58,7 +58,7 @@ print(f"Initial Distance: {initial}")
 result = travel.simulate(nswaps=2)
 best = min(tsp.history, key=lambda x: x.perf)
 
-# Best Observed Performance: 1224.4175407776427
+# Best Observed Performance: 1141.554300548556
 # Result will likely be larger than this on a single iteration
 print(f"Proposed Minimum Distance: {best.perf}")
 
