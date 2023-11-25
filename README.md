@@ -47,11 +47,11 @@ coordinates = seed.uniform(0., 100., (50, 3))
 
 # Instantiate TSP Interface
 tsp = TSP(
-    tsp,
+    coordinates,
     cooling.InverseCooling(1000, 0.9),
     fitness.CircularEuclidean()
 )
-intial = tsp.fitness(tsp)  # 3571.1151820333043
+intial = tsp.fitness(coordinates)  # 3571.1151820333043
 print(f"Initial Distance: {initial}")
 
 # You might want to simualte several times
