@@ -27,6 +27,7 @@ from abc import ABC
 from abc import abstractmethod
 from dataclasses import dataclass
 from logging import Logger
+from math import exp
 from typing import List, Optional
 
 import numpy as np
@@ -40,8 +41,10 @@ _log = Logger(__name__, 10)
 @dataclass
 class Sample:
     iteration: int
-    order: np.ndarray
+    tm: float
     perf: float
+    better: bool
+    order: np.ndarray
 
 
 def stochastic(options: int, size: int):
@@ -64,6 +67,11 @@ def n_opt(array: np.ndarray, n: int = 2):
     """Stochastically Swaps inplace any N indices within an array"""
     index = np.random.choice(len(array), n, replace=False)
     array[index] = array[np.roll(index, 1)]
+
+
+def probability(difference: float, temperature: float) -> float:
+    """Calculates the Probability scaled by the difference and current temperature"""
+    return exp(-difference / temperature)
 
 
 class AnnealingBase(ABC):
@@ -106,10 +114,16 @@ class AnnealingBase(ABC):
 
     @property
     def steps(self):
+        """Number of Steps, or Iterations"""
         return self.chill.steps
 
+    @property
+    def best(self) -> Sample:
+        """Best Performing Sample Found"""
+        return min(self.history, key=lambda x: x.perf)
+
     @abstractmethod
-    def mixing(self, index, n: int):
+    def mixing(self, index, n: int) -> None:
         """Defines how we shuffle or select next indices."""
         n_opt(index, np.random.randint(2, n + 1))
 
@@ -118,7 +132,7 @@ class AnnealingBase(ABC):
         """Slices a Subsample of the Larger Dataset.
 
         Args:
-            idices (np.ndarray[int]): Array of Row Indices
+            indices (np.ndarray[int]): Array of Row Indices
 
         Returns:
             (np.ndarray)
@@ -133,12 +147,12 @@ class AnnealingBase(ABC):
         index = stochastic(total, k)
         return self.subsample(index)
 
-    def simulate(self, k: Optional[int] = None, nshuffle: int = 3):
+    def simulate(self, k: Optional[int] = None, nswaps: int = 3):
         """Simulate Annealing.
 
         Args:
             k (int): Choose k, Optional
-            nshuffle (int): Maximum Number of times to swap Indices
+            nswaps (int): Maximum Number of indices to swap
 
         Returns:
             (np.ndarray) Best Performing Data
@@ -147,21 +161,26 @@ class AnnealingBase(ABC):
         # Reset Tm
         self.tm = self.chill.tm_max
         data = self.data if k is None else self.nucleate(k)
+        if not (2 <= nswaps <= len(data)):
+            nswaps = max(2, min(nswaps, len(data)))
+            self.log.info(f"Setting nswaps argument to: {nswaps}")
         index = np.arange(len(data))
         best_index = np.copy(index)
         best = self.fitness(data)
         for j in range(self.steps):
-            self.mixing(index, nshuffle)
+            self.mixing(index, nswaps)
             array = self.subsample(index)
             current = self.fitness(array)
             self.tm = self.chill(j)
+            delta = current - best
+            test = delta <= 0
 
-            if (current <= best) or (self.tm > np.random.random(1) * self.chill.tm_max):
+            if test or probability(delta, self.tm) > np.random.random(1):
                 self.log.debug("Iteration %d: Performance (%.4f)", j, current)
                 best = current
                 best_index = np.copy(index)
                 data = np.copy(array)
-                self.history.append(Sample(iteration=j, order=data, perf=best))
+                self.history.append(Sample(iteration=j, tm=self.tm, perf=best, better=test, order=data))
             else:
                 index = np.copy(best_index)
 
