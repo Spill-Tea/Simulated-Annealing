@@ -1,7 +1,6 @@
 # Simulated-Annealing
 
-Simple and Clean Interface to perform Simulated Annealing on
-NP Hard Problems.
+Simple and Clean Interface to perform Simulated Annealing on NP Hard Problems.
 
 
 ### Table of Contents
