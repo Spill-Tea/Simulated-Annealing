@@ -56,12 +56,18 @@ print(f"Initial Distance: {initial}")
 
 # You might want to simualte several times
 result = travel.simulate(nswaps=2)
-best = min(tsp.history, key=lambda x: x.perf)
+print(f"Proposed Minimum Distance: {travel.best}")
 
-# Best Observed Performance: 1141.554300548556
-# Result will likely be larger than this on a single iteration
-print(f"Proposed Minimum Distance: {best.perf}")
+# Best Observed Performance: 1088.2251082017222
+best_idx = np.asarray([ 
+     0,  6, 13, 28, 37,  3, 19, 44, 34, 45,
+     2, 49, 30, 41, 25, 31, 18, 38,  8, 29, 
+    24, 14, 27, 20, 33, 10, 42, 48, 40,  7,
+     5, 26, 46, 12,  9, 36,  1, 32, 47, 22,
+    39, 16,  4, 43, 23, 17, 35, 15, 11, 21,
+])
 
+print(f"Best Observed Minimum Distance: {tsp.fitness(coordinates[best_idx])}")
 ```
 ![Cooling](docs/TSP_best.png)
 
