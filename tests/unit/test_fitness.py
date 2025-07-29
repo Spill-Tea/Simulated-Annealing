@@ -41,7 +41,7 @@ def coordinates_3d() -> np.ndarray:
 
 
 @pytest.mark.parametrize(
-    ["cls", "name", "expected"],
+    ["cls", "fixture_name", "expected"],
     [
         (fitness.LinearEuclidean, "coordinates_2d", 5.0),
         (fitness.CircularEuclidean, "coordinates_2d", 10.0),
@@ -49,15 +49,15 @@ def coordinates_3d() -> np.ndarray:
         (fitness.CircularEuclidean, "coordinates_3d", 8.0),
     ],
 )
-def test_linear(
-    name: str,
+def test_fitness(
+    fixture_name: str,
     cls: type[fitness.Fitness],
     expected: float,
     request: pytest.FixtureRequest,
 ) -> None:
-    """Test linear Euclidean"""
+    """Test fitness computation."""
     fit: fitness.Fitness = cls()
-    coordinates: np.ndarray = request.getfixturevalue(name)
+    coordinates: np.ndarray = request.getfixturevalue(fixture_name)
     result: float = fit.performance(coordinates)
 
-    assert result == expected, "Unexpected Linear Euclidean"
+    assert result == expected, f"Unexpected result: {cls.__name__}"
