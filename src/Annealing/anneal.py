@@ -1,17 +1,17 @@
 # MIT License
-
+#
 # Copyright (c) 2023 Spill-Tea
-
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-
+#
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
-
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -19,27 +19,27 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-"""
-    Annealing/anneal.py
 
-"""
-from abc import ABC
-from abc import abstractmethod
+"""Annealing/anneal.py."""
+
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from logging import Logger
 from math import exp
-from typing import List, Optional
 
 import numpy as np
 
 from .cooling import Cooling
 from .fitness import Fitness
 
-_log = Logger(__name__, 10)
+
+_log: Logger = Logger(__name__, 10)
 
 
 @dataclass
 class Sample:
+    """Simulated sample."""
+
     iteration: int
     tm: float
     perf: float
@@ -47,35 +47,36 @@ class Sample:
     order: np.ndarray
 
 
-def stochastic(options: int, size: int):
+def stochastic(options: int, size: int) -> np.ndarray:
+    """Stochastic choice (subsample) of options without duplicates."""
     return np.random.choice(options, size=size, replace=False)
 
 
-def swap(array):
-    """Stochastically Swaps two indices of an array, inplace.
+def swap(array: np.ndarray) -> None:
+    """Stochastically swaps two indices of an array, inplace.
 
     Note:
         For Potential Asymetric Swapping, call this function more
         than once, on the same array.
 
     """
-    idx1, idx2 = np.random.choice(len(array), 2, replace=False)
+    idx1, idx2 = stochastic(len(array), 2)
     array[idx1], array[idx2] = array[idx2], array[idx1]
 
 
-def n_opt(array: np.ndarray, n: int = 2):
-    """Stochastically Swaps inplace any N indices within an array"""
-    index = np.random.choice(len(array), n, replace=False)
+def n_opt(array: np.ndarray, n: int = 2) -> None:
+    """Stochastically Swaps inplace any N indices within an array."""
+    index: np.ndarray = stochastic(len(array), n)
     array[index] = array[np.roll(index, 1)]
 
 
 def probability(difference: float, temperature: float) -> float:
-    """Calculates the Probability scaled by the difference and current temperature"""
+    """Calculates the Probability scaled by the difference and current temperature."""
     return exp(-difference / temperature)
 
 
 class AnnealingBase(ABC):
-    """Abstract Simulated Annealing Base Class
+    """Abstract Simulated Annealing Base Class.
 
     Args:
         data (np.ndarray): Data used to simulate
@@ -83,8 +84,9 @@ class AnnealingBase(ABC):
         fitness (Fitness): Define Optimization Metrics
         log (Logger): Logger for debugging purposes
 
-        tm (float): Current Temperature
-        history (List[Sample]): History of saved best performing added to during simulation.
+    Attributes:
+        tm (float): Current temperature.
+        history (list[Sample]): History of best performing added to during simulation.
 
     Notes:
         1. In the Traveling Salesman Problem (TSP), we are aiming to
@@ -98,89 +100,101 @@ class AnnealingBase(ABC):
         case will resemble a 2d distance matrix.
 
     """
-    def __init__(self,
-                 data: np.ndarray,
-                 chill: Cooling,
-                 fitness: Fitness,
-                 log: Logger = _log,
-                 ) -> None:
+
+    data: np.ndarray
+    chill: Cooling
+    fitness: Fitness
+    log: Logger
+    tm: float
+    history: list[Sample]
+
+    def __init__(
+        self,
+        data: np.ndarray,
+        chill: Cooling,
+        fitness: Fitness,
+        log: Logger = _log,
+    ) -> None:
         self.data = data
         self.chill = chill
         self.fitness = fitness
         self.log = log
 
         self.tm = self.chill.tm_max
-        self.history: List[Sample] = []
+        self.history: list[Sample] = []
 
     @property
-    def steps(self):
-        """Number of Steps, or Iterations"""
+    def steps(self) -> int:
+        """Number of steps (iterations)."""
         return self.chill.steps
 
     @property
     def best(self) -> Sample:
-        """Best Performing Sample Found"""
+        """Best performing sample found."""
         return min(self.history, key=lambda x: x.perf)
 
     @abstractmethod
-    def mixing(self, index, n: int) -> None:
+    def mixing(self, index: np.ndarray, n: int) -> None:
         """Defines how we shuffle or select next indices."""
         n_opt(index, np.random.randint(2, n + 1))
 
     @abstractmethod
     def subsample(self, indices: np.ndarray) -> np.ndarray:
-        """Slices a Subsample of the Larger Dataset.
+        """Slices a subsample of the larger dataset.
 
         Args:
-            indices (np.ndarray[int]): Array of Row Indices
+            indices (np.ndarray[int]): Array of row indices.
 
         Returns:
-            (np.ndarray)
+            (np.ndarray) subsample of data (in provided order).
 
         """
         return self.data[indices]
 
-    def nucleate(self, k: Optional[int] = None):
-        """Initialize Iterative Selection Process."""
-        total = len(self.data)
+    def nucleate(self, k: int | None = None) -> np.ndarray:
+        """Initialize iterative selection process."""
+        total: int = len(self.data)
         k = k or total
-        index = stochastic(total, k)
+        index: np.ndarray = stochastic(total, k)
+
         return self.subsample(index)
 
-    def simulate(self, k: Optional[int] = None, nswaps: int = 3):
-        """Simulate Annealing.
+    def simulate(self, k: int | None = None, nswaps: int = 3) -> np.ndarray:
+        """Simulate annealing.
 
         Args:
-            k (int): Choose k, Optional
-            nswaps (int): Maximum Number of indices to swap
+            k (int): Choose k or default to length of data.
+            nswaps (int): Maximum Number of indices to swap.
 
         Returns:
-            (np.ndarray) Best Performing Data
+            (np.ndarray) Best performing data found.
 
         """
         # Reset Tm
         self.tm = self.chill.tm_max
-        data = self.data if k is None else self.nucleate(k)
+        data: np.ndarray = self.data if k is None else self.nucleate(k)
         if not (2 <= nswaps <= len(data)):
             nswaps = max(2, min(nswaps, len(data)))
             self.log.info(f"Setting nswaps argument to: {nswaps}")
-        index = np.arange(len(data))
-        best_index = np.copy(index)
-        best = self.fitness(data)
+        index: np.ndarray = np.arange(len(data))
+        best_index: np.ndarray = np.copy(index)
+        best: float = self.fitness(data)
         for j in range(self.steps):
             self.mixing(index, nswaps)
-            array = self.subsample(index)
-            current = self.fitness(array)
+            array: np.ndarray = self.subsample(index)
+            current: float = self.fitness(array)
             self.tm = self.chill(j)
-            delta = current - best
-            test = delta <= 0
+            delta: float = current - best
+            test: bool = delta <= 0
 
             if test or probability(delta, self.tm) > np.random.random(1):
                 self.log.debug("Iteration %d: Performance (%.4f)", j, current)
                 best = current
                 best_index = np.copy(index)
                 data = np.copy(array)
-                self.history.append(Sample(iteration=j, tm=self.tm, perf=best, better=test, order=data))
+                self.history.append(
+                    Sample(iteration=j, tm=self.tm, perf=best, better=test, order=data)
+                )
             else:
                 index = np.copy(best_index)
 
