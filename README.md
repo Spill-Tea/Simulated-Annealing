@@ -53,7 +53,7 @@ tsp = TSP(
 intial = tsp.fitness(coordinates)  # 3571.1151820333043
 print(f"Initial Distance: {initial}")
 
-# You might want to simualte several times
+# You might want to simulate several times
 result = travel.simulate(nswaps=2)
 print(f"Proposed Minimum Distance: {travel.best}")
 

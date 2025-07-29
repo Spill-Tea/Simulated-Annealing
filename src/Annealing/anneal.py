@@ -56,7 +56,7 @@ def swap(array: np.ndarray) -> None:
     """Stochastically swaps two indices of an array, inplace.
 
     Note:
-        For Potential Asymetric Swapping, call this function more
+        For Potential Asymmetric Swapping, call this function more
         than once, on the same array.
 
     """

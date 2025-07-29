@@ -79,7 +79,6 @@ exclude_also = [
 mypy_path = "Annealing"
 warn_unused_ignores = true
 allow_redefinition = false
-force_uppercase_builtins = true
 
 [tool.pylint.main]
 ignore = ["tests", "dist", "build"]
