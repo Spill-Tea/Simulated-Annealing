@@ -175,7 +175,8 @@ class AnnealingBase(ABC):
         data: np.ndarray = self.data if k is None else self.nucleate(k)
         if not (2 <= nswaps <= len(data)):
             nswaps = max(2, min(nswaps, len(data)))
-            self.log.info(f"Setting nswaps argument to: {nswaps}")
+            self.log.info("Setting nswaps argument to: %d", nswaps)
+
         index: np.ndarray = np.arange(len(data))
         best_index: np.ndarray = np.copy(index)
         best: float = self.fitness(data)

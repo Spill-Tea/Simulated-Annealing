@@ -47,7 +47,9 @@ class Cooling(ABC):
         self.tm_max = tm_max
 
     @abstractmethod
-    def cool(self, step: int) -> float: ...
+    def cool(self, step: int) -> float:
+        """Strategy dependent decrease in temperature by current step."""
+        raise NotImplementedError
 
     def __call__(self, step: int) -> float:
         return self.cool(step)
