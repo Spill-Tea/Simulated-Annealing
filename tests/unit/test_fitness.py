@@ -59,5 +59,7 @@ def test_fitness(
     fit: fitness.Fitness = cls()
     coordinates: np.ndarray = request.getfixturevalue(fixture_name)
     result: float = fit.performance(coordinates)
-
     assert result == expected, f"Unexpected result: {cls.__name__}"
+
+    resultb: float = fit(coordinates)
+    assert resultb == expected, f"Unexpected result: {cls.__name__}"
