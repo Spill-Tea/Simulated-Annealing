@@ -52,20 +52,8 @@ def stochastic(options: int, size: int) -> np.ndarray:
     return np.random.choice(options, size=size, replace=False)
 
 
-def swap(array: np.ndarray) -> None:
-    """Stochastically swaps two indices of an array, inplace.
-
-    Note:
-        For Potential Asymmetric Swapping, call this function more
-        than once, on the same array.
-
-    """
-    idx1, idx2 = stochastic(len(array), 2)
-    array[idx1], array[idx2] = array[idx2], array[idx1]
-
-
-def n_opt(array: np.ndarray, n: int = 2) -> None:
-    """Stochastically Swaps inplace any N indices within an array."""
+def swap(array: np.ndarray, n: int = 2) -> None:
+    """Stochastically swaps inplace any N indices within an array."""
     index: np.ndarray = stochastic(len(array), n)
     array[index] = array[np.roll(index, 1)]
 
@@ -136,7 +124,7 @@ class AnnealingBase(ABC):
     @abstractmethod
     def mixing(self, index: np.ndarray, n: int) -> None:
         """Defines how we shuffle or select next indices."""
-        n_opt(index, np.random.randint(2, n + 1))
+        swap(index, np.random.randint(2, n + 1))
 
     @abstractmethod
     def subsample(self, indices: np.ndarray) -> np.ndarray:
