@@ -26,46 +26,6 @@ import numpy as np
 import pytest
 
 from Annealing import anneal
-from Annealing.cooling import InverseCooling
-from Annealing.fitness import CircularEuclidean
-
-
-@pytest.fixture
-def tsp() -> type[anneal.AnnealingBase]:
-    """tsp annealing base."""
-
-    class TSP(anneal.AnnealingBase):
-        def mixing(self, index, nshuffle):
-            super().mixing(index, nshuffle)
-
-        def subsample(self, indices: np.ndarray) -> np.ndarray:
-            return super().subsample(indices)
-
-    return TSP
-
-
-@pytest.fixture
-def coord() -> np.ndarray:
-    """random 3d coordinates."""
-    seed = np.random.default_rng(23)
-    coordinates = seed.uniform(0.0, 100.0, (50, 3))
-
-    return coordinates
-
-
-@pytest.fixture
-def tsp_base(
-    coord: np.ndarray,
-    tsp: type[anneal.AnnealingBase],
-) -> anneal.AnnealingBase:
-    """Instance of TSP annealing base."""
-    base: anneal.AnnealingBase = tsp(
-        coord,
-        InverseCooling(1000, 0.9),
-        CircularEuclidean(),
-    )
-
-    return base
 
 
 def test_stochastic() -> None:
@@ -115,39 +75,36 @@ def test_probability(diff: float, temp: float, expected: float) -> None:
 
 
 def test_annealing_nucleate(
-    tsp_base: anneal.AnnealingBase,
+    tsp: anneal.AnnealingBase,
 ) -> None:
     """Test a simulation of TSP annealing."""
-    base: anneal.AnnealingBase = tsp_base
-    assert isinstance(base, anneal.AnnealingBase), "Expected subclass instance."
-    assert len(base.history) == 0, "Expected no elements"
+    assert isinstance(tsp, anneal.AnnealingBase), "Expected subclass instance."
+    assert len(tsp.history) == 0, "Expected no elements"
 
-    result = base.simulate(len(base.data))
+    result = tsp.simulate(len(tsp.data))
     assert isinstance(result, np.ndarray), "Expected an array."
-    assert len(result) == len(base.data), "Expected same size array."
+    assert len(result) == len(tsp.data), "Expected same size array."
 
 
 def test_annealing(
-    tsp_base: anneal.AnnealingBase,
+    tsp: anneal.AnnealingBase,
 ) -> None:
     """Test annealing without nucleation to more reliably measure fitness improves."""
-    base: anneal.AnnealingBase = tsp_base
-    result = base.simulate()
+    result = tsp.simulate()
 
-    assert len(base.history) > 0, "Expected to have results saved in history."
-    assert base.fitness(result) < base.fitness(base.data), (
+    assert len(tsp.history) > 0, "Expected to have results saved in history."
+    assert tsp.fitness(result) < tsp.fitness(tsp.data), (
         "Expected improvement of coordinate order."
     )
-    assert base.fitness(base.best.order) < base.fitness(base.data), (
+    assert tsp.fitness(tsp.best.order) < tsp.fitness(tsp.data), (
         "Expected improvement of coordinate order."
     )
 
 
 def test_annealing_low_nswaps(
-    tsp_base: anneal.AnnealingBase,
+    tsp: anneal.AnnealingBase,
 ) -> None:
     """Test annealing simulation setting low nswaps."""
-    base: anneal.AnnealingBase = tsp_base
-    result = base.simulate(nswaps=1)
+    result = tsp.simulate(nswaps=1)
 
     assert isinstance(result, np.ndarray), "Expected an array."
