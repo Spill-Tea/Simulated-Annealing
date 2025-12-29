@@ -25,6 +25,7 @@
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterable
 
+import networkx as nx  # type: ignore[import-untyped]
 import numpy as np
 
 
@@ -62,8 +63,36 @@ def build_2d_distance_matrix(
     return matrix
 
 
-# TODO: Think how we can integrate a strategy into a simulated annealing approach.
-#       Think of it as a co-strategy to escape local minima to reach better convergence.
+def build_graph(
+    coordinates: np.ndarray,
+    distance: Callable[[np.ndarray, np.ndarray], float] = _euclidean,
+) -> nx.Graph:
+    """Build a complete weighted undirected eulerian graph from coordinates."""
+    n: int = len(coordinates)
+    graph = nx.Graph()
+    for node in range(n):
+        graph.add_node(node, coordinate=coordinates[node])
+
+    for j in range(n):
+        for k in range(j + 1, n):
+            graph.add_edge(j, k, weight=distance(coordinates[j], coordinates[k]))
+
+    return graph
+
+
+def build_graph_from_2d_distance_matrix(matrix: np.ndarray) -> nx.Graph:
+    """Construct a weighted undirected eulerian graph from 2d distance matrix."""
+    n: int = len(matrix)
+    graph = nx.Graph()
+    for node in range(n):
+        graph.add_node(node)
+    for j in range(n):
+        for k in range(j + 1, n):
+            graph.add_edge(j, k, weight=matrix[j, k])
+
+    return graph
+
+
 class Strategy(ABC):
     """Abstract minimization strategy.
 
@@ -395,3 +424,40 @@ class ThreeOptStrategy(TSPStrategy):
         min_cost = self.calculate_tour_cost(self.tour)
 
         return self.tour, min_cost
+
+
+class ChristofidesStrategy(TSPStrategy):
+    """Christofides strategy to minimize TSP problem."""
+
+    graph: nx.Graph
+
+    def __init__(self, distance_matrix: np.ndarray) -> None:
+        super().__init__(distance_matrix)
+        self.graph = build_graph_from_2d_distance_matrix(distance_matrix)
+
+    def christofides_tsp(self) -> list[int]:
+        """Perform christofides strategy to improving tour length."""
+        mst: nx.Graph = nx.minimum_spanning_tree(self.graph, algorithm="prim")
+        odd_degree = [v for v, d in mst.degree() if d % 2 == 1]
+
+        # Find Minimum Weight Perfect Matching among odd degree nodes
+        subgraph: nx.Graph = self.graph.subgraph(odd_degree)
+        matching: set = nx.algorithms.matching.min_weight_matching(subgraph)
+        eulerian_graph = nx.MultiGraph(mst)
+        eulerian_graph.add_edges_from(matching)
+
+        # Shortcut Eulerian circuit to form the final TSP tour
+        tour: list[int] = []
+        visited: set[int] = set()
+        for u, _ in nx.eulerian_circuit(eulerian_graph):
+            if u not in visited:
+                tour.append(u)
+                visited.add(u)
+
+        return tour
+
+    def minimize(self) -> tuple[list[int], float]:
+        self.tour = self.christofides_tsp()
+        cost = self.calculate_tour_cost(self.tour)
+
+        return self.tour, cost

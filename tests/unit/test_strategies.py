@@ -22,6 +22,7 @@
 
 """unit test strategies."""
 
+import networkx as nx
 import numpy as np
 import pytest
 
@@ -202,12 +203,80 @@ def tour_3opt() -> list[int]:
     ]
 
 
+@pytest.fixture
+def tour_cfs() -> list[int]:
+    """christofides tour."""
+    return [
+        0,
+        28,
+        13,
+        37,
+        3,
+        19,
+        44,
+        34,
+        45,
+        2,
+        30,
+        49,
+        26,
+        5,
+        46,
+        12,
+        9,
+        36,
+        1,
+        32,
+        47,
+        39,
+        22,
+        16,
+        4,
+        43,
+        23,
+        17,
+        35,
+        15,
+        33,
+        42,
+        10,
+        48,
+        40,
+        7,
+        14,
+        20,
+        27,
+        24,
+        38,
+        25,
+        41,
+        8,
+        29,
+        18,
+        31,
+        11,
+        21,
+        6,
+    ]
+
+
+def test_matrix_to_graph(dm: np.ndarray, coord: np.ndarray) -> None:
+    """Confirm graphs constructed are equal."""
+    graph_a = strategies.build_graph_from_2d_distance_matrix(dm)
+    graph_b = strategies.build_graph(coord)
+
+    assert nx.utils.edges_equal(graph_a.edges, graph_b.edges), "Unequal Edges"
+    assert nx.utils.nodes_equal(graph_a.nodes, graph_b.nodes), "Unequal Nodes"
+    assert nx.algorithms.is_isomorphic(graph_a, graph_b), "Graphs are not isomorphic"
+
+
 @pytest.mark.parametrize(
     ["tsp_strategy", "expected_tour", "expected_cost"],
     [
         (strategies.NearestNeighborStrategy, "tour_nn", 1149.5188),
         (strategies.TwoOptStrategy, "tour_2opt", 1119.0572),
         (strategies.ThreeOptStrategy, "tour_3opt", 1200.9199),
+        (strategies.ChristofidesStrategy, "tour_cfs", 1178.9486),
     ],
 )
 def test_tsp_strategies(
@@ -216,15 +285,15 @@ def test_tsp_strategies(
     expected_tour: list[int],
     expected_cost: float,
     request: pytest.FixtureRequest,
-):
+) -> None:
     """Test various tsp strategies produce expected tours and costs."""
     strategy = tsp_strategy(dm)
     tour, val = strategy.minimize()
     expected = request.getfixturevalue(expected_tour)
 
     assert isinstance(tour, list), "Expected a list result."
-    assert tour == expected, "Expected predictable tour."
     assert len(tour) == len(dm), "Expected same number of data points."
+    assert tour == expected, "Expected predictable tour."
 
     assert isinstance(val, float), "Expected a float result."
     assert np.isclose(val, expected_cost), "Unexpected tour length calculation."
