@@ -161,11 +161,12 @@ class AnnealingBase(ABC):
         # Reset Tm
         self.tm = self.chill.tm_max
         data: np.ndarray = self.data if k is None else self.nucleate(k)
-        if not (2 <= nswaps <= len(data)):
-            nswaps = max(2, min(nswaps, len(data)))
+        length: int = len(data)
+        if not (2 <= nswaps <= length):
+            nswaps = max(2, min(nswaps, length))
             self.log.info("Setting nswaps argument to: %d", nswaps)
 
-        index: np.ndarray = np.arange(len(data))
+        index: np.ndarray = np.arange(length)
         best_index: np.ndarray = np.copy(index)
         best: float = self.fitness(data)
         for j in range(self.steps):
