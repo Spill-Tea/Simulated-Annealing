@@ -225,7 +225,7 @@ class NearestNeighborStrategy(TSPStrategy):
         return self.tour
 
     def minimize(self) -> tuple[list[int], float]:
-        min_cost: float = float("inf")
+        cost: float = float("inf")
         best_tour: list[int] = []
         start: int
         func: Callable[[int], list[int]]
@@ -234,13 +234,13 @@ class NearestNeighborStrategy(TSPStrategy):
             for func in (self.nearest_neighbor, self.radial_nn):
                 tour: list[int] = func(start)
                 tour_cost: float = self.calculate_tour_cost(tour)
-                if tour_cost < min_cost:
-                    min_cost = tour_cost
+                if tour_cost < cost:
+                    cost = tour_cost
                     best_tour = tour
 
         self.tour = best_tour
 
-        return self.tour, min_cost
+        return self.tour, cost
 
 
 class TwoOptStrategy(TSPStrategy):
@@ -312,9 +312,9 @@ class TwoOptStrategy(TSPStrategy):
 
     def minimize(self, iterations: int = 10_000) -> tuple[list[int], float]:
         self.two_opt(iterations)
-        min_cost: float = self.calculate_tour_cost(self.tour)
+        cost: float = self.calculate_tour_cost(self.tour)
 
-        return self.tour, min_cost
+        return self.tour, cost
 
 
 class ThreeOptStrategy(TSPStrategy):
@@ -421,9 +421,9 @@ class ThreeOptStrategy(TSPStrategy):
 
     def minimize(self, iterations: int = 10_000) -> tuple[list[int], float]:
         self.three_opt(iterations)
-        min_cost = self.calculate_tour_cost(self.tour)
+        cost: float = self.calculate_tour_cost(self.tour)
 
-        return self.tour, min_cost
+        return self.tour, cost
 
 
 class ChristofidesStrategy(TSPStrategy):
@@ -457,7 +457,7 @@ class ChristofidesStrategy(TSPStrategy):
         return tour
 
     def minimize(self) -> tuple[list[int], float]:
-        self.tour = self.christofides_tsp()
-        cost = self.calculate_tour_cost(self.tour)
+        self.tour: list[int] = self.christofides_tsp()
+        cost: float = self.calculate_tour_cost(self.tour)
 
         return self.tour, cost
