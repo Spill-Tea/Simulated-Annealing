@@ -37,6 +37,7 @@ def dm(coord: np.ndarray) -> np.ndarray:
 
 @pytest.fixture
 def tour_nn() -> list[int]:
+    """Nearest neighbor tour."""
     return [
         8,
         29,
@@ -93,6 +94,7 @@ def tour_nn() -> list[int]:
 
 @pytest.fixture
 def tour_2opt() -> list[int]:
+    """Two opt tour."""
     return [
         0,
         21,
@@ -149,6 +151,7 @@ def tour_2opt() -> list[int]:
 
 @pytest.fixture
 def tour_3opt() -> list[int]:
+    """Three opt tour."""
     return [
         0,
         6,
@@ -258,6 +261,44 @@ def tour_cfs() -> list[int]:
         21,
         6,
     ]
+
+
+@pytest.fixture
+def sample_coord() -> np.ndarray:
+    coordinates: np.ndarray = np.asarray([[1, 2], [3, 4], [5, 6]])
+    return coordinates
+
+
+@pytest.fixture
+def sample_graph(sample_coord: np.ndarray) -> nx.Graph:
+    graph: nx.Graph = nx.Graph()
+    graph.add_node(0, coordinate=sample_coord[0].tolist())
+    graph.add_node(1, coordinate=sample_coord[1].tolist())
+    graph.add_node(2, coordinate=sample_coord[2].tolist())
+    graph.add_edge(0, 1, weight=strategies._euclidean(sample_coord[0], sample_coord[1]))
+    graph.add_edge(0, 2, weight=strategies._euclidean(sample_coord[0], sample_coord[2]))
+    graph.add_edge(1, 2, weight=strategies._euclidean(sample_coord[1], sample_coord[2]))
+
+    return graph
+
+
+def test_graph_build_from_coordinates(
+    sample_coord: np.ndarray,
+    sample_graph: nx.Graph,
+) -> None:
+    """Confirm graph is built correctly from coordinates."""
+    result: nx.Graph = strategies.build_graph(sample_coord)
+    assert nx.algorithms.is_isomorphic(result, sample_graph), (
+        "Graphs are not isomorphic"
+    )
+
+    # convert array to list for quick python object equality checks.
+    for i in result.nodes:
+        result.nodes[i]["coordinate"] = result.nodes[i]["coordinate"].tolist()
+
+    # NOTE: utility function from networkx only performs python object equivalence
+    #       and numpy arrays must use np.all for complete equivalency.
+    assert nx.utils.graphs_equal(sample_graph, result), "Graphs are not equivalent."
 
 
 def test_matrix_to_graph(dm: np.ndarray, coord: np.ndarray) -> None:
